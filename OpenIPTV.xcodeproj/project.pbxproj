@@ -207,6 +207,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					AD7F8BE51E1A0F04864E24B8 = {
+						DevelopmentTeam = V9AX39SPJD;
+					};
 				};
 			};
 			buildConfigurationList = FD7B47DAEB5496303084DD1D /* Build configuration list for PBXProject "OpenIPTV" */;
@@ -454,6 +457,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = V9AX39SPJD;
 				INFOPLIST_FILE = OpenIPTV/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -474,6 +478,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = V9AX39SPJD;
 				INFOPLIST_FILE = OpenIPTV/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -9,6 +9,25 @@ settings:
     SWIFT_VERSION: 5.9
     MARKETING_VERSION: 1.0
     CURRENT_PROJECT_VERSION: 1
+schemes:
+  OpenIPTV:
+    build:
+      targets:
+        OpenIPTV: all
+        OpenIPTVTests: [test]
+    run:
+      config: Debug
+      debugEnabled: false
+    test:
+      config: Debug
+      targets:
+        - OpenIPTVTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
 targets:
   OpenIPTV:
     type: application
@@ -38,6 +57,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.michaelinal.openiptv
         PRODUCT_NAME: OpenIPTV
+        DEVELOPMENT_TEAM: V9AX39SPJD
         TARGETED_DEVICE_FAMILY: 1,2
         SUPPORTS_MACCATALYST: false
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

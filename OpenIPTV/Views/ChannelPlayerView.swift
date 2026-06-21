@@ -86,6 +86,7 @@ struct ChannelPlayerView: View {
     }
 }
 
+@MainActor
 private final class PlaybackSession {
     let player = AVPlayer()
     private var activeURL: URL?
@@ -131,7 +132,6 @@ struct SystemVideoPlayer: UIViewControllerRepresentable {
         let controller = AVPlayerViewController()
         controller.player = player
         controller.delegate = context.coordinator
-        controller.speeds = []
         controller.allowsPictureInPicturePlayback = true
         controller.canStartPictureInPictureAutomaticallyFromInline = true
         controller.updatesNowPlayingInfoCenter = true
@@ -143,7 +143,6 @@ struct SystemVideoPlayer: UIViewControllerRepresentable {
             controller.player = player
         }
         controller.delegate = context.coordinator
-        controller.speeds = []
     }
 
     func makeCoordinator() -> Coordinator {

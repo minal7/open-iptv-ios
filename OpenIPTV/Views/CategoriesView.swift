@@ -7,36 +7,31 @@ struct CategoriesView: View {
     var body: some View {
         let summaries = store.categorySummaries
 
-        ZStack {
-            AppBackground()
+        LibraryScreenContainer {
+            PageTitleHeader(
+                title: "Categories",
+                subtitle: "\(compactCount(summaries.count)) categories from \(store.selectedPlaylistName)",
+                systemImage: "square.grid.2x2.fill"
+            )
 
             List {
                 ScrollOffsetProbe(coordinateSpaceName: "categories-scroll")
 
-                Section {
+                if summaries.isEmpty {
+                    ContentUnavailableView(
+                        "No Categories",
+                        systemImage: "square.grid.2x2",
+                        description: Text("Add a playlist with grouped channels to browse categories.")
+                    )
+                    .listRowBackground(Color.clear)
+                } else {
                     ForEach(summaries) { category in
-                        NavigationLink {
-                            CategoryChannelsView(store: store, category: category.name)
-                        } label: {
+                        NavigationLink(value: LibraryRoute.category(category.name)) {
                             CategoryRow(category: category)
                         }
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                     }
-                } header: {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Categories")
-                            .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                            .foregroundStyle(.primary)
-
-                        Text("\(compactCount(summaries.count)) categories from \(store.selectedPlaylistName)")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .textCase(nil)
-                            .lineLimit(1)
-                    }
-                    .padding(.top, 12)
-                    .padding(.bottom, 10)
                 }
             }
             .listStyle(.plain)
@@ -45,6 +40,9 @@ struct CategoriesView: View {
             .onVerticalScrollDirectionChange(onScrollCollapseChange)
         }
         .toolbar(.hidden, for: .navigationBar)
+        .overlay(alignment: .bottom) {
+            LoadingToast(store: store)
+        }
     }
 }
 
@@ -77,7 +75,7 @@ private struct CategoryRow: View {
     }
 }
 
-private struct CategoryChannelsView: View {
+struct CategoryChannelsView: View {
     var store: PlaylistStore
     var category: String
 
@@ -86,22 +84,29 @@ private struct CategoryChannelsView: View {
     }
 
     var body: some View {
-        ZStack {
-            AppBackground()
+        LibraryScreenContainer {
+            PageTitleHeader(
+                title: category,
+                subtitle: "\(compactCount(channels.count)) channels in \(store.selectedPlaylistName)",
+                systemImage: "square.grid.2x2.fill"
+            )
 
             ChannelResultsList(
                 channels: channels,
                 store: store,
                 emptyTitle: "No Channels",
                 emptyMessage: "This category has no channels in the selected playlist.",
+                topAnchorID: "category-\(category)-top",
                 refreshAction: {
                     await store.reload()
                 }
             )
-            .padding(.top, 6)
         }
         .navigationTitle(category)
         .navigationBarTitleDisplayMode(.inline)
+        .overlay(alignment: .bottom) {
+            LoadingToast(store: store)
+        }
     }
 }
 

@@ -2,9 +2,10 @@ import SwiftUI
 
 struct AppRootView: View {
     @State private var store = PlaylistStore()
+    @State private var navigationPath: [LibraryRoute] = []
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack {
                 if !store.hasLibrary {
                     OnboardingView(store: store)
@@ -14,8 +15,13 @@ struct AppRootView: View {
                         .transition(.opacity.combined(with: .scale(scale: 1.01)))
                 }
             }
-            .navigationDestination(for: Channel.self) { channel in
-                ChannelPlayerView(channel: channel, store: store)
+            .navigationDestination(for: LibraryRoute.self) { route in
+                switch route {
+                case .category(let category):
+                    CategoryChannelsView(store: store, category: category)
+                case .channel(let channel):
+                    ChannelPlayerView(channel: channel, store: store)
+                }
             }
         }
         .tint(.teal)
@@ -23,10 +29,16 @@ struct AppRootView: View {
     }
 }
 
+enum LibraryRoute: Hashable {
+    case category(String)
+    case channel(Channel)
+}
+
 private struct LibraryTabView: View {
     @Bindable var store: PlaylistStore
     @State private var selectedTab: LibraryTab = .channels
     @State private var isTabBarCollapsed = false
+    @State private var allowsScrollCollapse = false
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -45,6 +57,12 @@ private struct LibraryTabView: View {
         .toolbar(.hidden, for: .navigationBar)
         .animation(.smooth(duration: 0.32), value: selectedTab)
         .animation(.spring(response: 0.42, dampingFraction: 0.84), value: isTabBarCollapsed)
+        .task(id: selectedTab) {
+            allowsScrollCollapse = false
+            isTabBarCollapsed = false
+            try? await Task.sleep(for: .milliseconds(450))
+            allowsScrollCollapse = true
+        }
     }
 
     @ViewBuilder
@@ -52,29 +70,34 @@ private struct LibraryTabView: View {
         switch selectedTab {
         case .channels:
             ChannelLibraryView(store: store) { shouldCollapse in
-                isTabBarCollapsed = shouldCollapse
+                updateTabBarCollapse(shouldCollapse)
             }
         case .search:
             SearchView(store: store) { shouldCollapse in
-                isTabBarCollapsed = shouldCollapse
+                updateTabBarCollapse(shouldCollapse)
             }
                 .onAppear { isTabBarCollapsed = false }
         case .categories:
             CategoriesView(store: store) { shouldCollapse in
-                isTabBarCollapsed = shouldCollapse
+                updateTabBarCollapse(shouldCollapse)
             }
                 .onAppear { isTabBarCollapsed = false }
         case .saved:
             SavedChannelsView(store: store) { shouldCollapse in
-                isTabBarCollapsed = shouldCollapse
+                updateTabBarCollapse(shouldCollapse)
             }
                 .onAppear { isTabBarCollapsed = false }
         case .playlists:
             PlaylistsView(store: store) { shouldCollapse in
-                isTabBarCollapsed = shouldCollapse
+                updateTabBarCollapse(shouldCollapse)
             }
                 .onAppear { isTabBarCollapsed = false }
         }
+    }
+
+    private func updateTabBarCollapse(_ shouldCollapse: Bool) {
+        guard allowsScrollCollapse else { return }
+        isTabBarCollapsed = shouldCollapse
     }
 }
 
@@ -122,22 +145,21 @@ private struct FloatingTabBar: View {
     @Binding var selectedTab: LibraryTab
     @Binding var isCollapsed: Bool
     @Namespace private var selectionNamespace
+    private let expandedTabWidth: CGFloat = 58
+    private let compactTabWidth: CGFloat = 38
 
     var body: some View {
-        HStack(spacing: isCollapsed ? 0 : 4) {
-            if isCollapsed {
-                collapsedButton
-                    .transition(.scale.combined(with: .opacity))
-            } else {
-                ForEach(LibraryTab.allCases) { tab in
+        HStack(spacing: isCollapsed ? 6 : 4) {
+            ForEach(LibraryTab.allCases) { tab in
+                if isCollapsed {
+                    compactButton(for: tab)
+                } else {
                     expandedButton(for: tab)
                 }
-                .transition(.opacity)
             }
         }
         .padding(.horizontal, isCollapsed ? 10 : 12)
         .padding(.vertical, isCollapsed ? 10 : 8)
-        .frame(width: isCollapsed ? 66 : nil, alignment: .leading)
         .background(.regularMaterial, in: Capsule())
         .overlay {
             Capsule()
@@ -147,18 +169,26 @@ private struct FloatingTabBar: View {
         .accessibilityElement(children: .contain)
     }
 
-    private var collapsedButton: some View {
+    private func compactButton(for tab: LibraryTab) -> some View {
         Button {
+            selectedTab = tab
             isCollapsed = false
         } label: {
-            Image(systemName: selectedTab.systemImage)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.teal)
-                .frame(width: 44, height: 44)
-                .background(.thinMaterial, in: Circle())
+            Image(systemName: tab.systemImage)
+                .font(.system(size: 18, weight: selectedTab == tab ? .semibold : .regular))
+                .foregroundStyle(selectedTab == tab ? .teal : .primary)
+                .frame(width: compactTabWidth, height: compactTabWidth)
+                .background {
+                    if selectedTab == tab {
+                        Circle()
+                            .fill(Color.teal.opacity(0.14))
+                            .matchedGeometryEffect(id: "selected-tab", in: selectionNamespace)
+                    }
+                }
+                .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Show navigation")
+        .accessibilityLabel(tab.title)
     }
 
     private func expandedButton(for tab: LibraryTab) -> some View {
@@ -176,7 +206,7 @@ private struct FloatingTabBar: View {
                     .minimumScaleFactor(0.7)
             }
             .foregroundStyle(selectedTab == tab ? .teal : .primary)
-            .frame(width: 62, height: 52)
+            .frame(width: expandedTabWidth, height: 52)
             .background {
                 if selectedTab == tab {
                     RoundedRectangle(cornerRadius: 22, style: .continuous)

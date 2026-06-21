@@ -20,10 +20,26 @@ struct AppBackground: View {
 
 extension View {
     func panelBackground(cornerRadius: CGFloat = 28) -> some View {
-        background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        background {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(.regularMaterial)
+
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.34),
+                            Color.teal.opacity(0.07),
+                            Color.indigo.opacity(0.04)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        }
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(.white.opacity(0.18), lineWidth: 1)
+                    .stroke(.white.opacity(0.28), lineWidth: 1)
             }
     }
 }

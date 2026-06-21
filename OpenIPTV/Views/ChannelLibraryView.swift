@@ -45,7 +45,7 @@ struct ChannelLibraryView: View {
                             .padding(.top, 40)
                         } else {
                             ForEach(channels) { channel in
-                                NavigationLink(value: channel) {
+                                NavigationLink(value: LibraryRoute.channel(channel)) {
                                     ChannelRow(channel: channel, isFavorite: store.isFavorite(channel))
                                         .padding(.horizontal, 2)
                                 }
@@ -125,38 +125,45 @@ private struct ScrollDirectionChangeModifier: ViewModifier {
             content.onScrollGeometryChange(for: CGFloat.self) { geometry in
                 geometry.contentOffset.y
             } action: { oldValue, newValue in
-                updateCollapseState(oldValue: oldValue, newValue: newValue)
+                updateCollapseState(contentOffset: newValue)
             }
         } else {
             content.onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
-                updateCollapseState(newValue: offset)
+                updateCollapseState(frameOffset: offset)
             }
         }
     }
 
-    private func updateCollapseState(oldValue: CGFloat, newValue: CGFloat) {
-        let delta = newValue - oldValue
+    private func updateCollapseState(contentOffset: CGFloat) {
+        guard hasMeasuredOffset else {
+            lastOffset = contentOffset
+            hasMeasuredOffset = true
+            return
+        }
+
+        let delta = contentOffset - lastOffset
         if delta > 12 {
             onChange(true)
         } else if delta < -12 {
             onChange(false)
         }
+        lastOffset = contentOffset
     }
 
-    private func updateCollapseState(newValue: CGFloat) {
+    private func updateCollapseState(frameOffset: CGFloat) {
         guard hasMeasuredOffset else {
-            lastOffset = newValue
+            lastOffset = frameOffset
             hasMeasuredOffset = true
             return
         }
 
-        let delta = newValue - lastOffset
+        let delta = frameOffset - lastOffset
         if delta < -12 {
             onChange(true)
         } else if delta > 12 {
             onChange(false)
         }
-        lastOffset = newValue
+        lastOffset = frameOffset
     }
 }
 
@@ -352,7 +359,7 @@ struct ChannelResultsList: View {
                 .listRowBackground(Color.clear)
             } else {
                 ForEach(channels) { channel in
-                    NavigationLink(value: channel) {
+                    NavigationLink(value: LibraryRoute.channel(channel)) {
                         ChannelRow(channel: channel, isFavorite: store.isFavorite(channel))
                     }
                     .listRowSeparator(.hidden)
