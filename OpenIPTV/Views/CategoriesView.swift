@@ -2,7 +2,6 @@ import SwiftUI
 
 struct CategoriesView: View {
     @Bindable var store: PlaylistStore
-    var onScrollCollapseChange: (Bool) -> Void = { _ in }
 
     var body: some View {
         let summaries = store.categorySummaries
@@ -15,8 +14,6 @@ struct CategoriesView: View {
             )
 
             List {
-                ScrollOffsetProbe(coordinateSpaceName: "categories-scroll")
-
                 if summaries.isEmpty {
                     ContentUnavailableView(
                         "No Categories",
@@ -35,8 +32,6 @@ struct CategoriesView: View {
                 }
             }
             .libraryPlainListLayout()
-            .coordinateSpace(name: "categories-scroll")
-            .onVerticalScrollDirectionChange(onScrollCollapseChange)
         }
         .toolbar(.hidden, for: .navigationBar)
         .overlay(alignment: .bottom) {
@@ -95,10 +90,7 @@ struct CategoryChannelsView: View {
                 store: store,
                 emptyTitle: "No Channels",
                 emptyMessage: "This category has no channels in the selected playlist.",
-                topAnchorID: "category-\(category)-top",
-                refreshAction: {
-                    await store.reload()
-                }
+                topAnchorID: "category-\(category)-top"
             )
         }
         .navigationTitle(category)

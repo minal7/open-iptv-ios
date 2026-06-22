@@ -3,173 +3,84 @@ import SwiftUI
 struct ChannelLibraryView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Bindable var store: PlaylistStore
-    var onScrollCollapseChange: (Bool) -> Void = { _ in }
 
     var body: some View {
         let channels = store.channels
         let categoryCount = store.categorySummaries.count
+        let isLandscape = verticalSizeClass == .compact
 
         ZStack {
             AppBackground()
 
-            ScrollView {
-                ScrollOffsetProbe(coordinateSpaceName: "channel-scroll")
+            List {
+                LibraryHeader(
+                    title: "Channels",
+                    subtitle: store.selectedPlaylistName,
+                    channelCount: channels.count,
+                    categoryCount: categoryCount,
+                    favoriteCount: store.favoriteChannelIDs.count,
+                    playlistCount: store.playlists.count,
+                    lastUpdated: store.lastUpdated,
+                    isCompact: isLandscape,
+                    refreshAction: {
+                        Task { await store.reload() }
+                    }
+                )
+                .padding(.top, 10)
+                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                .libraryClearListRow()
 
-                LazyVStack(spacing: 12, pinnedViews: [.sectionHeaders]) {
-                    LibraryHeader(
-                        title: "Channels",
-                        subtitle: store.selectedPlaylistName,
-                        channelCount: channels.count,
-                        categoryCount: categoryCount,
-                        favoriteCount: store.favoriteChannelIDs.count,
-                        playlistCount: store.playlists.count,
-                        lastUpdated: store.lastUpdated,
-                        isCompact: verticalSizeClass == .compact,
-                        refreshAction: {
-                            Task { await store.reload() }
-                        }
+                CompactLibraryHeader(
+                    title: store.selectedPlaylistName,
+                    channelCount: channels.count,
+                    categoryCount: categoryCount,
+                    refreshAction: {
+                        Task { await store.reload() }
+                    }
+                )
+                .padding(.top, 8)
+                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 10, trailing: 16))
+                .libraryClearListRow()
+
+                if let errorMessage = store.errorMessage {
+                    ErrorBanner(message: errorMessage)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+                        .libraryClearListRow()
+                }
+
+                if channels.isEmpty {
+                    ContentUnavailableView(
+                        "No Channels",
+                        systemImage: "play.tv",
+                        description: Text("Add or select a playlist from the Playlists tab.")
                     )
-                    .padding(.top, 10)
-
-                    Section {
-                        if let errorMessage = store.errorMessage {
-                            ErrorBanner(message: errorMessage)
+                    .padding(.top, 40)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                    .libraryClearListRow()
+                } else {
+                    ForEach(channels) { channel in
+                        NavigationLink(value: LibraryRoute.channel(channel)) {
+                            ChannelRow(channel: channel, isFavorite: store.isFavorite(channel))
                         }
-
-                        if channels.isEmpty {
-                            ContentUnavailableView(
-                                "No Channels",
-                                systemImage: "play.tv",
-                                description: Text("Add or select a playlist from the Playlists tab.")
-                            )
-                            .padding(.top, 40)
-                        } else {
-                            ForEach(channels) { channel in
-                                NavigationLink(value: LibraryRoute.channel(channel)) {
-                                    ChannelRow(channel: channel, isFavorite: store.isFavorite(channel))
-                                        .padding(.horizontal, 2)
-                                }
-                                .buttonStyle(.plain)
-                                .padding(.horizontal, 10)
-                                .background(.clear)
-                            }
-                        }
-                    } header: {
-                        CompactLibraryHeader(
-                            title: store.selectedPlaylistName,
-                            channelCount: channels.count,
-                            categoryCount: categoryCount,
-                            refreshAction: {
-                                Task { await store.reload() }
-                            }
-                        )
+                        .buttonStyle(.plain)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 26, bottom: 0, trailing: 26))
+                        .libraryClearListRow()
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 96)
             }
-            .coordinateSpace(name: "channel-scroll")
+            .libraryPlainListLayout()
+            .contentMargins(.bottom, 12, for: .scrollContent)
             .refreshable {
                 await store.reload()
             }
-            .onVerticalScrollDirectionChange(onScrollCollapseChange)
 
-            TopSafeAreaScrim()
+            if !isLandscape {
+                TopSafeAreaScrim()
+            }
         }
         .overlay(alignment: .bottom) {
             LoadingToast(store: store)
         }
-    }
-}
-
-struct ScrollOffsetProbe: View {
-    var coordinateSpaceName: String
-    var anchorID: String?
-
-    init(coordinateSpaceName: String, anchorID: String? = nil) {
-        self.coordinateSpaceName = coordinateSpaceName
-        self.anchorID = anchorID
-    }
-
-    var body: some View {
-        GeometryReader { proxy in
-            Color.clear.preference(
-                key: ScrollOffsetPreferenceKey.self,
-                value: proxy.frame(in: .named(coordinateSpaceName)).minY
-            )
-        }
-        .frame(height: 0)
-        .id(anchorID ?? coordinateSpaceName)
-        .listRowInsets(EdgeInsets())
-        .listRowSeparator(.hidden)
-        .listRowBackground(Color.clear)
-    }
-}
-
-private struct ScrollOffsetPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
-private struct ScrollDirectionChangeModifier: ViewModifier {
-    var onChange: (Bool) -> Void
-    @State private var lastOffset: CGFloat = 0
-    @State private var hasMeasuredOffset = false
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if #available(iOS 18.0, *) {
-            content.onScrollGeometryChange(for: CGFloat.self) { geometry in
-                geometry.contentOffset.y
-            } action: { oldValue, newValue in
-                updateCollapseState(contentOffset: newValue)
-            }
-        } else {
-            content.onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
-                updateCollapseState(frameOffset: offset)
-            }
-        }
-    }
-
-    private func updateCollapseState(contentOffset: CGFloat) {
-        guard hasMeasuredOffset else {
-            lastOffset = contentOffset
-            hasMeasuredOffset = true
-            return
-        }
-
-        let delta = contentOffset - lastOffset
-        if delta > 12 {
-            onChange(true)
-        } else if delta < -12 {
-            onChange(false)
-        }
-        lastOffset = contentOffset
-    }
-
-    private func updateCollapseState(frameOffset: CGFloat) {
-        guard hasMeasuredOffset else {
-            lastOffset = frameOffset
-            hasMeasuredOffset = true
-            return
-        }
-
-        let delta = frameOffset - lastOffset
-        if delta < -12 {
-            onChange(true)
-        } else if delta > 12 {
-            onChange(false)
-        }
-        lastOffset = frameOffset
-    }
-}
-
-extension View {
-    func onVerticalScrollDirectionChange(_ onChange: @escaping (Bool) -> Void) -> some View {
-        modifier(ScrollDirectionChangeModifier(onChange: onChange))
     }
 }
 
@@ -280,6 +191,7 @@ private struct CompactLibraryHeader: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.headline)
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
 
@@ -297,6 +209,7 @@ private struct CompactLibraryHeader: View {
             }
             .buttonStyle(.bordered)
             .buttonBorderShape(.circle)
+            .tint(.teal)
             .accessibilityLabel("Refresh")
         }
         .padding(.horizontal, 14)
@@ -342,13 +255,10 @@ struct ChannelResultsList: View {
     var emptyTitle: String
     var emptyMessage: String
     var topAnchorID = "channel-results-top"
-    var onScrollCollapseChange: (Bool) -> Void = { _ in }
-    var refreshAction: (() async -> Void)?
-    private var scrollCoordinateSpaceName: String { "\(topAnchorID)-scroll" }
 
     var body: some View {
         List {
-            ScrollOffsetProbe(coordinateSpaceName: scrollCoordinateSpaceName, anchorID: topAnchorID)
+            ListTopAnchor(anchorID: topAnchorID)
 
             if channels.isEmpty {
                 ContentUnavailableView(
@@ -368,11 +278,6 @@ struct ChannelResultsList: View {
             }
         }
         .libraryPlainListLayout()
-        .coordinateSpace(name: scrollCoordinateSpaceName)
-        .onVerticalScrollDirectionChange(onScrollCollapseChange)
-        .refreshable {
-            await refreshAction?()
-        }
     }
 }
 
@@ -382,6 +287,24 @@ extension View {
             .scrollContentBackground(.hidden)
             .contentMargins(.top, 0, for: .scrollContent)
             .environment(\.defaultMinListRowHeight, 1)
+    }
+
+    func libraryClearListRow() -> some View {
+        listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+    }
+}
+
+private struct ListTopAnchor: View {
+    var anchorID: String
+
+    var body: some View {
+        Color.clear
+            .frame(height: 0)
+            .id(anchorID)
+            .accessibilityHidden(true)
+            .listRowInsets(EdgeInsets())
+            .libraryClearListRow()
     }
 }
 

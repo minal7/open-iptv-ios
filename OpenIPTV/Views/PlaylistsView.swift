@@ -2,7 +2,6 @@ import SwiftUI
 
 struct PlaylistsView: View {
     @Bindable var store: PlaylistStore
-    var onScrollCollapseChange: (Bool) -> Void = { _ in }
     @State private var showingPlaylistEditor = false
     @State private var showingClearConfirmation = false
 
@@ -20,8 +19,6 @@ struct PlaylistsView: View {
             )
 
             List {
-                ScrollOffsetProbe(coordinateSpaceName: "playlists-scroll")
-
                 Button {
                     store.selectPlaylist(nil)
                 } label: {
@@ -67,8 +64,6 @@ struct PlaylistsView: View {
                 }
             }
             .libraryPlainListLayout()
-            .coordinateSpace(name: "playlists-scroll")
-            .onVerticalScrollDirectionChange(onScrollCollapseChange)
         }
         .sheet(isPresented: $showingPlaylistEditor) {
             PlaylistEditorSheet(store: store)

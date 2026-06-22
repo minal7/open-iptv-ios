@@ -2,7 +2,6 @@ import SwiftUI
 
 struct SearchView: View {
     @Bindable var store: PlaylistStore
-    var onScrollCollapseChange: (Bool) -> Void = { _ in }
     @State private var searchText = ""
     private let topAnchorID = "search-results-top"
 
@@ -26,11 +25,7 @@ struct SearchView: View {
                     store: store,
                     emptyTitle: searchText.isEmpty ? "Start Searching" : "No Matches",
                     emptyMessage: searchText.isEmpty ? "Search by channel, category, playlist, or host." : "Try a shorter search.",
-                    topAnchorID: topAnchorID,
-                    onScrollCollapseChange: onScrollCollapseChange,
-                    refreshAction: {
-                        await store.reload()
-                    }
+                    topAnchorID: topAnchorID
                 )
             }
             .onChange(of: searchText) { _, _ in
