@@ -97,6 +97,8 @@ private final class PlaybackSession {
     }
 
     func play(_ channel: Channel) {
+        MediaPlaybackSession.configure()
+
         if activeURL != channel.streamURL {
             activeURL = channel.streamURL
             let item = AVPlayerItem(url: channel.streamURL)
@@ -135,6 +137,9 @@ struct SystemVideoPlayer: UIViewControllerRepresentable {
         controller.allowsPictureInPicturePlayback = true
         controller.canStartPictureInPictureAutomaticallyFromInline = true
         controller.updatesNowPlayingInfoCenter = true
+        controller.speeds = []
+        player.allowsExternalPlayback = true
+        player.usesExternalPlaybackWhileExternalScreenIsActive = true
         return controller
     }
 
@@ -142,6 +147,9 @@ struct SystemVideoPlayer: UIViewControllerRepresentable {
         if controller.player !== player {
             controller.player = player
         }
+        controller.speeds = []
+        player.allowsExternalPlayback = true
+        player.usesExternalPlaybackWhileExternalScreenIsActive = true
         controller.delegate = context.coordinator
     }
 

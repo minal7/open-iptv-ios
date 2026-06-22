@@ -41,6 +41,8 @@ targets:
         CFBundleDisplayName: Open IPTV
         UILaunchScreen: {}
         UIApplicationSupportsIndirectInputEvents: true
+        UIBackgroundModes:
+          - audio
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft
