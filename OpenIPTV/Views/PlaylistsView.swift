@@ -66,8 +66,7 @@ struct PlaylistsView: View {
                     }
                 }
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
+            .libraryPlainListLayout()
             .coordinateSpace(name: "playlists-scroll")
             .onVerticalScrollDirectionChange(onScrollCollapseChange)
         }
