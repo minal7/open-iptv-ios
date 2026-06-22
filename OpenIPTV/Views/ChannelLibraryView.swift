@@ -367,13 +367,21 @@ struct ChannelResultsList: View {
                 }
             }
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
+        .libraryPlainListLayout()
         .coordinateSpace(name: scrollCoordinateSpaceName)
         .onVerticalScrollDirectionChange(onScrollCollapseChange)
         .refreshable {
             await refreshAction?()
         }
+    }
+}
+
+extension View {
+    func libraryPlainListLayout() -> some View {
+        listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .contentMargins(.top, 0, for: .scrollContent)
+            .environment(\.defaultMinListRowHeight, 1)
     }
 }
 

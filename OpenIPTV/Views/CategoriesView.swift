@@ -34,8 +34,7 @@ struct CategoriesView: View {
                     }
                 }
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
+            .libraryPlainListLayout()
             .coordinateSpace(name: "categories-scroll")
             .onVerticalScrollDirectionChange(onScrollCollapseChange)
         }
